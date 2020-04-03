@@ -6,7 +6,7 @@
 
     <servlet>
         <servlet-name>SampleRESTApp</servlet-name>
-        <servlet-class>org.spice.SampleREST</servlet-class>
+        <servlet-class>org.spice.sample.SampleREST</servlet-class>
     </servlet>
 
     <servlet-mapping>

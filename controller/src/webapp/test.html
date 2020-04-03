@@ -21,6 +21,7 @@
                  if(request.status == 200) {
                      callback(JSON.parse(request.response),null)
                  } else {
+                     console.log(request)
                      callback(null, {
                          status: request.status, msg: request.statusText
                      })

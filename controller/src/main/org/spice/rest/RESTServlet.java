@@ -34,16 +34,20 @@ public class RESTServlet extends HttpServlet {
         methods.put(prefix, method);
     }
 
-    protected void listMethods(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        JsonWriter write = setupJson(response);
+    protected void listMethods(HttpServletRequest request, HttpServletResponse response) {
+        JsonWriter writer = setupJson(response);
 
-        JsonObjectBuilder ret = Json.createObjectBuilder();
-        JsonArrayBuilder arr = Json.createArrayBuilder();
-        for(String method: methods.keySet())
-            arr.add(method);
-        ret.add("methods", arr);
+        try {
+            JsonObjectBuilder ret = Json.createObjectBuilder();
+            JsonArrayBuilder arr = Json.createArrayBuilder();
+            for(String method: methods.keySet())
+                arr.add(method);
+            ret.add("methods", arr);
 
-        write.writeObject(ret.build());
+            writer.writeObject(ret.build());
+        } finally {
+            writer.close();
+        }
     }
 
     protected void trySendError(HttpServletResponse response, int code) {

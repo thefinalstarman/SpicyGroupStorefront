@@ -1,4 +1,4 @@
-package org.spice;
+package org.spice.sample;
 
 import java.util.Map;
 import java.util.Arrays;
@@ -55,7 +55,7 @@ public class SampleREST extends RESTServlet {
             A = Integer.parseInt(a);
             B = Integer.parseInt(b);
         } catch(NumberFormatException e) {
-            trySendError(response, HttpServletResponse.SC_BAD_REQUEST);
+            trySendError(response, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
             return;
         }
 
