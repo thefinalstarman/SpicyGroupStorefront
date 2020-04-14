@@ -9,8 +9,18 @@
         <servlet-class>org.spice.sample.SampleREST</servlet-class>
     </servlet>
 
+    <servlet>
+        <servlet-name>SMS</servlet-name>
+        <servlet-class>org.spice.sms.SMS</servlet-class>
+    </servlet>
+
     <servlet-mapping>
         <servlet-name>SampleRESTApp</servlet-name>
         <url-pattern>/sample_rest/*</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>SMS</servlet-name>
+        <url-pattern>/sms/*</url-pattern>
     </servlet-mapping>
 </web-app>

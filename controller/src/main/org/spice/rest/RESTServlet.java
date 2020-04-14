@@ -30,11 +30,13 @@ public class RESTServlet extends HttpServlet {
         return request.getParameterMap();
     }
 
-    protected void registerMethod(String prefix, BiConsumer<HttpServletRequest,HttpServletResponse> method) {
+    protected void registerMethod(String prefix,
+                                  BiConsumer<HttpServletRequest,HttpServletResponse> method) {
         methods.put(prefix, method);
     }
 
-    protected void listMethods(HttpServletRequest request, HttpServletResponse response) {
+    protected void listMethods(HttpServletRequest request,
+                               HttpServletResponse response) {
         JsonWriter writer = setupJson(response);
 
         try {
@@ -50,7 +52,8 @@ public class RESTServlet extends HttpServlet {
         }
     }
 
-    protected void trySendError(HttpServletResponse response, int code) {
+    protected void trySendError(HttpServletResponse response,
+                                int code) {
         try {
             response.sendError(code);
         } catch(IOException e) {}
@@ -62,19 +65,27 @@ public class RESTServlet extends HttpServlet {
         } catch(IOException e) {}
     }
 
-    public <T> boolean isEmpty(T[] s) {
+    static public <T> boolean isEmpty(T[] s) {
         return s == null || s.length == 0;
     }
 
-    protected String[] readParam(HttpServletRequest request, String name) throws RESTException {
+    protected String[] readParam(HttpServletRequest request,
+                                 String name,
+                                 boolean required) throws RESTException {
         String[] ret = getParams(request).get(name);
-        if(isEmpty(ret))
+        if(required && isEmpty(ret))
             throw new RESTException("Missing required parameter, " + name);
         return ret;
     }
 
+    protected String[] readParam(HttpServletRequest request,
+                                 String name) throws RESTException {
+        return readParam(request, name, true);
+    }
+
     @Override
-    public void doGet(HttpServletRequest request, HttpServletResponse response)
+    public void doGet(HttpServletRequest request,
+                      HttpServletResponse response)
         throws IOException, ServletException {
         if(request.getPathInfo() == null || request.getPathInfo().equals("/")) {
             listMethods(request, response);
