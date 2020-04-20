@@ -12,18 +12,17 @@ public class JdbcMySQLVersion {
 
     public static void main(String[] args) {
 
-        String url = "jdbc:mysql://localhost:3306/testdb?serverTimezone=UTC";
+        String url = "jdbc:mysql://localhost:3306/storeback?serverTimezone=UTC";
         String user = "testuser";
         String password = "test623";
 
-        String query = "SELECT VERSION()";
+        String query = "show tables";
 
         try (Connection con = DriverManager.getConnection(url, user, password);
              Statement st = con.createStatement();
              ResultSet rs = st.executeQuery(query)) {
 
-            if (rs.next()) {
-
+            while (rs.next()) {
                 System.out.println(rs.getString(1));
             }
 

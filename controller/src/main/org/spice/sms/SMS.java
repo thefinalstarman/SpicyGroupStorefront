@@ -2,6 +2,13 @@ package org.spice.sms;
 
 import java.util.Map;
 import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
+
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import java.sql.SQLException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -13,42 +20,47 @@ import java.util.function.BiConsumer;
 
 import org.spice.rest.RESTServlet;
 import org.spice.rest.RESTException;
+import org.spice.sql.Data;
 
 public class SMS extends RESTServlet {
+    Data myData = new Data();
 
     public void doAddProduct(HttpServletRequest req, HttpServletResponse response) {
         Map<String,String[]> params = getParams(req);
 
-        String name, category, _price;
+        String name, _price;
+        String[] category;
         try {
             name = readParam(req, "name")[0];
-            category = readParam(req, "category")[0];
             _price = readParam(req, "price")[0];
+
+            // optional for now
+            category = readParam(req, "category", false);
         } catch(RESTException e) {
             trySendError(response, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
             return;
         }
 
-        int price;
+        double price;
         try {
-            price = Integer.parseInt(_price);
+            price = Double.parseDouble(_price);
         } catch(NumberFormatException e) {
             trySendError(response, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
             return;
         }
 
-        // TODO: actually insert into the Products table,
-        // grab the resulting pk and the fk for category
+        Data.Product inserted = null;
+        try {
+            inserted = myData.createProduct(name, price);
+        } catch (SQLException e) {
+            trySendError(response, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
+            return;
+        }
 
         JsonWriter writer = setupJson(response);
 
         try {
-            JsonObjectBuilder resp = Json.createObjectBuilder();
-            resp.add("id", 1);
-            resp.add("name", name);
-            resp.add("category", 1);
-            resp.add("price", price);
-            writer.writeObject(resp.build());
+            writer.writeObject(inserted.toJson());
         } finally {
             writer.close();
         }
@@ -73,17 +85,19 @@ public class SMS extends RESTServlet {
             return;
         }
 
-        // TODO: find the product first,
-        // return the object and delete it, error if it doesn't exist
+        boolean result;
+        try {
+            result = myData.deleteProduct(id);
+        } catch(SQLException e) {
+            trySendError(response, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
+            return;
+        }
 
         JsonWriter writer = setupJson(response);
 
         try {
             JsonObjectBuilder resp = Json.createObjectBuilder();
-            resp.add("id", id);
-            resp.add("name", "test_name");
-            resp.add("category", 1);
-            resp.add("price", 1);
+            resp.add("result", result);
             writer.writeObject(resp.build());
         } finally {
             writer.close();
@@ -97,7 +111,7 @@ public class SMS extends RESTServlet {
         try {
             name = readParam(req, "name", false);
             category = readParam(req, "category", false);
-            product = readParam(req, "category", false);
+            product = readParam(req, "product", false);
         } catch(RESTException e) {
             trySendError(response, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
             return;
@@ -105,21 +119,22 @@ public class SMS extends RESTServlet {
 
         // TODO: find the list of matching people
 
+        List<Data.Person> result;
+        try {
+            result = myData.searchCustomers(isEmpty(name) ? null : name[0],
+                                            isEmpty(product) ? null : product[0]);
+        } catch(SQLException e) {
+            trySendError(response, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
+            return;
+        }
+
         JsonWriter writer = setupJson(response);
 
         try {
             JsonArrayBuilder resp = Json.createArrayBuilder();
 
-            for(int i = 0; i < 2; i++) {
-                JsonObjectBuilder person = Json.createObjectBuilder();
-                person.add("id", i);
-
-                if(!isEmpty(name)) {
-                    person.add("name", name[i % name.length]);
-                } else {
-                    person.add("name", "test_name_" + i);
-                }
-                resp.add(person);
+            for(Data.Person p: result) {
+                resp.add(p.toJson());
             }
 
             writer.writeArray(resp.build());
@@ -128,7 +143,9 @@ public class SMS extends RESTServlet {
         }
     }
 
+
     public SMS() {
+
         registerMethod("addProduct", this::doAddProduct);
         registerMethod("deleteProduct", this::doDeleteProduct);
         registerMethod("customerSearch", this::doCustomerSearch);
