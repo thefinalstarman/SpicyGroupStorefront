@@ -99,6 +99,8 @@ public class Data {
         return ps.executeUpdate() > 0;
     }
 
+    // From here on, all Person related JDBC functions will be inserted.
+    // Adding Persons and Searching mostly important functions. 
     public class Person {
         public final int id; // personId
         public final String name;
@@ -120,6 +122,19 @@ public class Data {
             if(address != null) builder.add("address", address);
             return builder.build();
         }
+    }
+
+    public Person createPerson(String name,int id, String address, String credit) throws SQLException {
+        PreparedStatement ps = con.prepareStatement("insert into Persons(personId, name, credit, billingAddress) values(?,?,?,?)", 
+                                PreparedStatement.RETURN_GENERATED_KEYS);
+        ps.setInt(1,id);
+        ps.setString(2,name);
+        ps.setString(3,address);
+        ps.setstring(4,credit);
+
+        ps.executeUpdate();
+
+        return new Person(id, name, credit, address); //Added by Kenneth, setting up when users add the order.
     }
 
     public List<Person> searchCustomers(String name,
@@ -163,4 +178,60 @@ public class Data {
 
         return ret;
     }
+
+    // Here will be the public class for Discounts.
+    // All methods pertaining to discounts will be added here (adding, searching, etc).
+    public class Discounts {
+        public final int discId;
+        public final Date createdDate;
+
+        protected Discounts(int discId, createdDate) {
+            this.discId = discId;
+            this.createdDate = createdDate;
+        }
+
+        public JsonObject toJson() {
+            JsonObjectBuilder builder = Json.createObjectBuilder();
+            builder.add("discId", discId);
+            builder.add("createdDate", createdDate);
+            return builder.build();
+        }
+    }
+
+        //Creating discount codes, taking in only the generated int string.
+        // Created the date here as a reference.
+    public Discounts createDiscount(int discountId) throws SQLException
+    {
+        Date createdDate = new Date();
+        PreparedStatement ps = con.prepareStatement("insert into Persons(discountId, dateCreated) values(?,?)", 
+                        PreparedStatement.RETURN_GENERATED_KEYS);
+        ps.setInt(1,id);
+        ps.setDate(2, new java.sql.Date(createdDate.getTime()));
+
+        ps.executeUpdate();
+        
+        return new Discounts(discountId, createdDate);
+    }
+
+        // Searching Discount codes method. 
+        public Discounts searchDiscount (int discountId) throws SQLException 
+        {
+            PreparedStatement ps = con.prepareStatement("select discountId,dateCreated from Discounts where id=?");
+            ps.setInt(1, discountID);
+
+            ResultSet rs = ps.executeQuery();
+
+            int discountid;
+            Date dateCreated;
+
+            if(rs.next()) {
+                discountid = rs.getInt(1);
+                dateCreated = rs.getDate(2);
+            } 
+            
+            return new Discounts(discountid, dateCreated);
+        }
+
+
+
 }
