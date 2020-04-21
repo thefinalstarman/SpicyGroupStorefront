@@ -214,24 +214,22 @@ public class Data {
     }
 
         // Searching Discount codes method. 
-        public Discounts searchDiscount (int discountId) throws SQLException 
-        {
-            PreparedStatement ps = con.prepareStatement("select discountId,dateCreated from Discounts where id=?");
-            ps.setInt(1, discountID);
+    public Discounts searchDiscount (int discountId) throws SQLException 
+    {
+        PreparedStatement ps = con.prepareStatement("select discountId,dateCreated from Discounts where id=?");
+        ps.setInt(1, discountID);
 
-            ResultSet rs = ps.executeQuery();
+        ResultSet rs = ps.executeQuery();
 
-            int discountid;
-            Date dateCreated;
+        int discountid;
+        Date dateCreated;
 
-            if(rs.next()) {
-                discountid = rs.getInt(1);
-                dateCreated = rs.getDate(2);
-            } 
+        if(rs.next()) {
+            discountid = rs.getInt(1);
+            dateCreated = rs.getDate(2);
+        } 
             
-            return new Discounts(discountid, dateCreated);
-        }
-
-
+        return new Discounts(discountid, dateCreated);
+    }
 
 }

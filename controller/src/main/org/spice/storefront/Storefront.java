@@ -27,15 +27,14 @@ public class Storefront extends RESTServlet {
 
     public void doSubmitOrder(HttpServletRequest req, HttpServletResponse response) {
         Map<String,String[]> params = getParams(req);
-
+        
+        // Will item parameters be here as well?
         String cname, caddress;
         String ccard;
-        String cid;
         try {
             cname = readParam(req, "cname")[0];
             caddress = readParam(req, "caddress")[0];
             ccard = readParam(req, "ccard")[0];
-            cid = readParam(req,"cid")[0];
         } catch(RESTException e) {
             trySendError(response, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
             return;
@@ -60,6 +59,13 @@ public class Storefront extends RESTServlet {
         }
 
         //TODO: Export everything onto Orders table after! 
+    }
+
+    public void generateDiscountCode(HttpServletRequest req, HttpServletResponse response) {
+
+        int discId = 
+
+
     }
 
 }
