@@ -231,5 +231,4 @@ public class Data {
             
         return new Discounts(discountid, dateCreated);
     }
-
 }
