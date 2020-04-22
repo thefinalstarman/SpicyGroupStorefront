@@ -100,7 +100,7 @@ public class Data {
     }
 
     // From here on, all Person related JDBC functions will be inserted.
-    // Adding Persons and Searching mostly important functions. 
+    // Adding Persons and Searching mostly important functions.
     public class Person {
         public final int id; // personId
         public final String name;
@@ -125,13 +125,13 @@ public class Data {
     }
 
     public Person createPerson(String name, String address, String credit) throws SQLException {
-        PreparedStatement ps = con.prepareStatement("insert into Persons(name, credit, billingAddress) values(?,?,?)", 
+        PreparedStatement ps = con.prepareStatement("insert into Persons(name, credit, billingAddress) values(?,?,?)",
                                 PreparedStatement.RETURN_GENERATED_KEYS);
         ps.setString(1,name);
         ps.setString(2,address);
         ps.setString(3,credit);
         ps.executeUpdate();
-        
+
         int cid = -1;
         ResultSet rs = ps.getGeneratedKeys();
         while(rs.next()) {
@@ -212,21 +212,21 @@ public class Data {
                             PreparedStatement.RETURN_GENERATED_KEYS);
 
         ps.executeUpdate();
-            
+
         int id = -1;
         Date newDate = null;
 
         ResultSet rs = ps.getGeneratedKeys();
-        
+
         if(rs.next()) {
             id = rs.getInt(1);
         }
-                    
+
         return new Discounts(id, newDate);
     }
 
-        // Searching Discount codes method. 
-    public Discounts searchDiscount (int discountId) throws SQLException 
+        // Searching Discount codes method.
+    public Discounts searchDiscount (int discountId) throws SQLException
     {
         PreparedStatement ps = con.prepareStatement("select discountId,dateCreated from Discounts where id=?");
 
@@ -240,8 +240,8 @@ public class Data {
         if(rs.next()) {
             discountid = rs.getInt(1);
             dateCreated = rs.getDate(2);
-        } 
-            
+        }
+
         return new Discounts(discountid, dateCreated);
     }
 
@@ -278,16 +278,16 @@ public class Data {
         ps.setInt(1, itemId);
         ps.setInt(2, discountId);
         ps.setInt(3, personId);
-        
+
         ps.executeUpdate();
-            
+
         int id = -1;
         ResultSet rs = ps.getGeneratedKeys();
-        
+
         if(rs.next()) {
             id = rs.getInt(1);
         }
-                    
+
         return new Orders(id, itemId,discountId,personId);
     }
 }
