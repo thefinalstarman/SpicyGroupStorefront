@@ -1,4 +1,5 @@
 **/build/
+**/bin/
 **/.gradle/
 .DS_Store
 controller/build.gradle
@@ -10,3 +11,4 @@ controller/build.gradle
 **/.classpath
 **/.project
 **/.settings/
+*.class
