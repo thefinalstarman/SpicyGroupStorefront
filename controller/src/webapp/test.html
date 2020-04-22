@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script>
+         function formatParams(params) {
+             return "?" + Object
+                 .keys(params)
+                 .map(function(key) {
+                     return key+"="+encodeURIComponent(params[key])
+                 })
+                 .join("&")
+         }
+
+         function makeJSONRequest(uri, params, callback) {
+             let request = new XMLHttpRequest();
+             let url = uri + formatParams(params)
+
+             request.open("GET", url)
+             request.send();
+             request.onload = () => {
+                 if(request.status == 200) {
+                     callback(JSON.parse(request.response),null)
+                 } else {
+                     console.log(request)
+                     callback(null, {
+                         status: request.status, msg: request.statusText
+                     })
+                 }
+             }
+         }
+
+         function makeRequest() {
+             let uri = "/controller/sample_rest/sum";
+             params = {
+                 a: document.getElementById("a").value,
+                 b: document.getElementById("b").value
+             }
+             makeJSONRequest(uri, params, (json,error) => {
+                 if(error == null) {
+                     document.getElementById('result').innerHTML = "Result = " + json['result']
+                     document.getElementById('error').innerHTML = ""
+                 } else {
+                     document.getElementById('result').innerHTML = ""
+                     document.getElementById('error').innerHTML = "Error " + error['status'] + ": " + error['msg']
+                 }
+             })
+         }
+        </script>
+    </head>
+
+    <body>
+        Wow, amazing 2.0
+
+        <form action="javascript:makeRequest()">
+            A = <input type="text" id="a"> <br>
+            B = <input type="text" id="b"> <br>
+            <input type="submit" value="Submit">
+        </form>
+
+        <p id="result"></p>
+        <p id="error"></p>
+    </body>
+
+</html>
