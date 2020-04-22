@@ -1,3 +1,4 @@
+
 package org.spice.storefront;
 
 import java.util.Map;
@@ -30,8 +31,10 @@ public class Storefront extends RESTServlet {
         
         // Will item parameters be here as well?
         String cname, caddress;
+
         String ccard, discountID;
         String itemId;
+
         try {
             cname = readParam(req, "cname")[0];
             caddress = readParam(req, "caddress")[0];
@@ -39,10 +42,12 @@ public class Storefront extends RESTServlet {
             discountID = readParam(req, "discountId")[0];
             itemId = readParam(req,"itemId")[0];
 
+
         } catch(RESTException e) {
             trySendError(response, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
             return;
         }
+
 
         Data.Person dataInsert = null;
         try{
@@ -59,6 +64,7 @@ public class Storefront extends RESTServlet {
             writer.close();
         }
 
+
         int disId = Integer.parseInt(discountID);
         int itId = Integer.parseInt(itemId);
         Data.Orders dataOrder = null;
@@ -74,7 +80,6 @@ public class Storefront extends RESTServlet {
         } finally {
             Ordwriter.close();
         }
-
     }
 
     public void generateDiscountCode(HttpServletRequest req, HttpServletResponse response) {

@@ -1,0 +1,45 @@
+plugins {
+    id 'application'
+    id 'war'
+}
+
+repositories { mavenCentral() }
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ['src/main']
+        }
+    }
+}
+
+dependencies {
+    compile group: 'mysql', name: 'mysql-connector-java', version: '8.0.19'
+    compile group: 'javax.servlet', name: 'servlet-api', version: '2.5'
+    compile group: 'org.glassfish', name: 'javax.json', version: '1.1.4'
+    compile group: 'javax.json', name: 'javax.json-api', version: '1.1.4'
+}
+
+mainClassName = 'org.spice.sample.JdbcMySQLVersion'
+
+war {
+    webAppDirName = "src/webapp"
+}
+
+def tomcatHome = System.getenv('CATALINA_HOME') ?: '/var/lib/tomcat9'
+
+task install(type: Copy) {
+    from war.archivePath
+    into "${tomcatHome}/webapps"
+
+    doLast {
+        println "ran install from ${war.archivePath} to ${tomcatHome}/webapps"
+    }
+}
+
+
+task my_test_task {
+    doLast {
+        println "${tomcatHome} ${war.archivePath}"
+    }
+}

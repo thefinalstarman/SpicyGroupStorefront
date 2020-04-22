@@ -197,6 +197,7 @@ public class Data {
         public JsonObject toJson() {
             JsonObjectBuilder builder = Json.createObjectBuilder();
             builder.add("discId", discId);
+
             builder.add("createdDate", createdDate.toString());
             return builder.build();
         }
@@ -204,6 +205,7 @@ public class Data {
 
         //Creating discount codes, taking in only the generated int string.
         // Created the date here as a reference.
+
     public Discounts createDiscount() throws SQLException
     {
         PreparedStatement ps = con.prepareStatement("insert into Discounts() values()",
@@ -227,6 +229,7 @@ public class Data {
     public Discounts searchDiscount (int discountId) throws SQLException 
     {
         PreparedStatement ps = con.prepareStatement("select discountId,dateCreated from Discounts where id=?");
+
         ps.setInt(1, discountId);
 
         ResultSet rs = ps.executeQuery();
@@ -241,6 +244,7 @@ public class Data {
             
         return new Discounts(discountid, dateCreated);
     }
+
 
     // Adding onto this, the Orders class.
     // below will be the functions that take in everything.
