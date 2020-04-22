@@ -2,5 +2,11 @@
 **/.gradle/
 .DS_Store
 controller/build.gradle
+
+# Emacs things
 **/.#*
 
+# Eclipse things
+**/.classpath
+**/.project
+**/.settings/

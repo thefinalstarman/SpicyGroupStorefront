@@ -28,7 +28,7 @@ public class Storefront extends RESTServlet {
 
     public void doSubmitOrder(HttpServletRequest req, HttpServletResponse response) {
         Map<String,String[]> params = getParams(req);
-        
+
         // Will item parameters be here as well?
         String cname, caddress;
 
@@ -41,13 +41,12 @@ public class Storefront extends RESTServlet {
             ccard = readParam(req, "ccard")[0];
             discountID = readParam(req, "discountId")[0];
             itemId = readParam(req,"itemId")[0];
-
-
         } catch(RESTException e) {
             trySendError(response, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
             return;
         }
 
+        JsonObjectBuilder result = Json.createObjectBuilder();
 
         Data.Person dataInsert = null;
         try{
@@ -57,33 +56,41 @@ public class Storefront extends RESTServlet {
             return;
         }
 
-        JsonWriter writer = setupJson(response);
+        result.add("person", dataInsert.toJson());
+
+        int disId, itId;
         try {
-            writer.writeObject(dataInsert.toJson());
-        } finally {
-            writer.close();
+            disId = Integer.parseInt(discountID);
+            itId = Integer.parseInt(itemId);
+        } catch(NumberFormatException e) {
+            trySendError(response, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
+            return;
         }
 
-
-        int disId = Integer.parseInt(discountID);
-        int itId = Integer.parseInt(itemId);
         Data.Orders dataOrder = null;
         try{
-            dataOrder = myDataSt.createOrder(itId,dataInsert.id,disId);
+            dataOrder = myDataSt.createOrder(itId,disId,dataInsert.id);
         } catch(SQLException e) {
             trySendError(response, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
+            return;
         }
 
-        JsonWriter Ordwriter = setupJson(response);
+        result.add("order", dataOrder.toJson());
+
+        JsonWriter writer = setupJson(response);
         try{
-            Ordwriter.writeObject(dataOrder.toJson());
+            writer.writeObject(result.build());
         } finally {
-            Ordwriter.close();
+            writer.close();
         }
     }
 
     public void generateDiscountCode(HttpServletRequest req, HttpServletResponse response) {
 
+    }
+
+    public Storefront() {
+        registerMethod("submitOrder", this::doSubmitOrder);
     }
 
 }
