@@ -1,3 +1,6 @@
 **/build/
 **/.gradle/
+.DS_Store
+controller/build.gradle
 **/.#*
+

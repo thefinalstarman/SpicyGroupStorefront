@@ -1,4 +1,5 @@
-package.org.spice.storefront
+
+package org.spice.storefront;
 
 import java.util.Map;
 import java.util.Arrays;
@@ -30,41 +31,58 @@ public class Storefront extends RESTServlet {
         
         // Will item parameters be here as well?
         String cname, caddress;
-        String ccard;
+
+        String ccard, discountID;
+        String itemId;
+
         try {
             cname = readParam(req, "cname")[0];
             caddress = readParam(req, "caddress")[0];
             ccard = readParam(req, "ccard")[0];
+            discountID = readParam(req, "discountId")[0];
+            itemId = readParam(req,"itemId")[0];
+
+
         } catch(RESTException e) {
             trySendError(response, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
             return;
         }
 
-        //TODO: Generate Unique ID Number!!
 
         Data.Person dataInsert = null;
         try{
-            dataInsert = myDataSt.createPerson(cname,cid,caddress,ccard);
+            dataInsert = myDataSt.createPerson(cname,caddress,ccard);
         } catch(SQLException e) {
             trySendError(response, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
             return;
         }
 
         JsonWriter writer = setupJson(response);
-
         try {
             writer.writeObject(dataInsert.toJson());
         } finally {
             writer.close();
         }
 
-        //TODO: Export everything onto Orders table after! 
+
+        int disId = Integer.parseInt(discountID);
+        int itId = Integer.parseInt(itemId);
+        Data.Orders dataOrder = null;
+        try{
+            dataOrder = myDataSt.createOrder(itId,dataInsert.id,disId);
+        } catch(SQLException e) {
+            trySendError(response, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
+        }
+
+        JsonWriter Ordwriter = setupJson(response);
+        try{
+            Ordwriter.writeObject(dataOrder.toJson());
+        } finally {
+            Ordwriter.close();
+        }
     }
 
     public void generateDiscountCode(HttpServletRequest req, HttpServletResponse response) {
-
-        int discId = 
-
 
     }
 
