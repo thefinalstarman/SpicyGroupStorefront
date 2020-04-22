@@ -13,7 +13,7 @@ import java.sql.PreparedStatement;
 
 import java.util.List;
 import java.util.ArrayList;
-
+import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -124,17 +124,21 @@ public class Data {
         }
     }
 
-    public Person createPerson(String name,int id, String address, String credit) throws SQLException {
-        PreparedStatement ps = con.prepareStatement("insert into Persons(personId, name, credit, billingAddress) values(?,?,?,?)", 
+    public Person createPerson(String name, String address, String credit) throws SQLException {
+        PreparedStatement ps = con.prepareStatement("insert into Persons(name, credit, billingAddress) values(?,?,?)", 
                                 PreparedStatement.RETURN_GENERATED_KEYS);
-        ps.setInt(1,id);
-        ps.setString(2,name);
-        ps.setString(3,address);
-        ps.setstring(4,credit);
-
+        ps.setString(1,name);
+        ps.setString(2,address);
+        ps.setString(3,credit);
         ps.executeUpdate();
+        
+        int cid = -1;
+        ResultSet rs = ps.getGeneratedKeys();
+        while(rs.next()) {
+            cid = rs.getInt(1);
+        }
 
-        return new Person(id, name, credit, address); //Added by Kenneth, setting up when users add the order.
+        return new Person(cid, name, credit, address); //Added by Kenneth, setting up when users add the order.
     }
 
     public List<Person> searchCustomers(String name,
@@ -185,7 +189,7 @@ public class Data {
         public final int discId;
         public final Date createdDate;
 
-        protected Discounts(int discId, createdDate) {
+        protected Discounts(int discId, Date createdDate) {
             this.discId = discId;
             this.createdDate = createdDate;
         }
@@ -193,36 +197,42 @@ public class Data {
         public JsonObject toJson() {
             JsonObjectBuilder builder = Json.createObjectBuilder();
             builder.add("discId", discId);
-            builder.add("createdDate", createdDate);
+            builder.add("createdDate", createdDate.toString());
             return builder.build();
         }
     }
 
         //Creating discount codes, taking in only the generated int string.
         // Created the date here as a reference.
-    public Discounts createDiscount(int discountId) throws SQLException
+    public Discounts createDiscount() throws SQLException
     {
-        Date createdDate = new Date();
-        PreparedStatement ps = con.prepareStatement("insert into Persons(discountId, dateCreated) values(?,?)", 
-                        PreparedStatement.RETURN_GENERATED_KEYS);
-        ps.setInt(1,id);
-        ps.setDate(2, new java.sql.Date(createdDate.getTime()));
+        PreparedStatement ps = con.prepareStatement("insert into Discounts() values()",
+                            PreparedStatement.RETURN_GENERATED_KEYS);
 
         ps.executeUpdate();
+            
+        int id = -1;
+        Date newDate = null;
+
+        ResultSet rs = ps.getGeneratedKeys();
         
-        return new Discounts(discountId, createdDate);
+        if(rs.next()) {
+            id = rs.getInt(1);
+        }
+                    
+        return new Discounts(id, newDate);
     }
 
         // Searching Discount codes method. 
     public Discounts searchDiscount (int discountId) throws SQLException 
     {
         PreparedStatement ps = con.prepareStatement("select discountId,dateCreated from Discounts where id=?");
-        ps.setInt(1, discountID);
+        ps.setInt(1, discountId);
 
         ResultSet rs = ps.executeQuery();
 
-        int discountid;
-        Date dateCreated;
+        int discountid = -1;
+        Date dateCreated = null;
 
         if(rs.next()) {
             discountid = rs.getInt(1);
@@ -230,5 +240,50 @@ public class Data {
         } 
             
         return new Discounts(discountid, dateCreated);
+    }
+
+    // Adding onto this, the Orders class.
+    // below will be the functions that take in everything.
+    public class Orders {
+        public final int personId;
+        public final int itemId;
+        public final int discountId;
+        public final int orderId;
+
+        Orders(int orderId, int itemId, int discountId, int personId)
+        {
+            this.orderId = orderId;
+            this.discountId = discountId;
+            this.itemId = itemId;
+            this.personId = personId;
+        }
+
+        public JsonObject toJson() {
+            JsonObjectBuilder builder = Json.createObjectBuilder();
+            builder.add("orderId", orderId);
+            builder.add("itemId", itemId);
+            builder.add("discountId", discountId);
+            builder.add("personId", personId);
+            return builder.build();
+        }
+    }
+
+    public Orders createOrder(int itemId, int discountId, int personId) throws SQLException {
+        PreparedStatement ps = con.prepareStatement("insert into Orders(itemId,discountId,personId) values(?,?,?)",
+                            PreparedStatement.RETURN_GENERATED_KEYS);
+        ps.setInt(1, itemId);
+        ps.setInt(2, discountId);
+        ps.setInt(3, personId);
+        
+        ps.executeUpdate();
+            
+        int id = -1;
+        ResultSet rs = ps.getGeneratedKeys();
+        
+        if(rs.next()) {
+            id = rs.getInt(1);
+        }
+                    
+        return new Orders(id, itemId,discountId,personId);
     }
 }
