@@ -4,3 +4,4 @@
 controller/build.gradle
 **/.#*
 
+*.class
