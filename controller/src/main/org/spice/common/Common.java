@@ -18,6 +18,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonNumber;
+import javax.json.JsonValue;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonWriter;
@@ -124,12 +125,77 @@ public class Common extends RESTServlet {
         }
     }
 
+    private double getDiscountedPrice(String order) throws SQLException {
+        // TODO: load policy from the db
+        TreeMap<Integer,Double> policy = new TreeMap<Integer,Double>();
+
+        policy.put(0, 1.);
+        policy.put(2, .5);
+
+        double basePrice;
+        int memberCount;
+        JsonObject info = myData.select()
+            .addTable(Orders.TABLE)
+            .addTable(Products.TABLE)
+            .addValue(Orders.DISCOUNT, "A")
+            .addValue(Products.PRICE, "B")
+            .addClause(Orders.PRODUCT, Data.EQ, Products.ID)
+            .addClause(Orders.ID, Data.EQ, Data.wrap(order))
+            .execute().get(0);
+
+        int discountId = info.getInt("A");
+        basePrice = info.getJsonNumber("B").doubleValue();
+
+        JsonObject count = myData.select()
+            .addTable(Orders.TABLE)
+            .addValue(Data.count(Orders.ID))
+            .addClause(Orders.DISCOUNT, Data.EQ, Data.wrap(discountId))
+            .execute().get(0);
+
+        memberCount = ((JsonNumber)count.values().iterator().next()).intValue();
+
+        double coef = policy.floorEntry(memberCount).getValue();
+        return Math.ceil(100 * coef * basePrice) / 100.;
+    }
+
+    public void doCalculatePrice(HttpServletRequest req, HttpServletResponse response) {
+        Map<String,String[]> params = getParams(req);
+
+        String order;
+
+        try {
+            order = readParam(req, "order")[0];
+        } catch(RESTException e) {
+            trySendError(response, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
+            return;
+        }
+
+        double result;
+        try {
+            result = getDiscountedPrice(order);
+        } catch (SQLException e) {
+            trySendError(response, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
+            return;
+        }
+
+        JsonWriter writer = setupJson(response);
+
+        try {
+            JsonObjectBuilder resp = Json.createObjectBuilder();
+            resp.add("result", result);
+            writer.writeObject(resp.build());
+        } finally {
+            writer.close();
+        }
+    }
+
     public void doListOrders(HttpServletRequest req, HttpServletResponse response) {
         Map<String,String[]> params = getParams(req);
 
-        String[] discountId;
+        String[] discountId, withDiscount;
         try {
             discountId = readParam(req, "discountId", false);
+            withDiscount = readParam(req, "withDiscount", false);
         } catch(RESTException e) {
             trySendError(response, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
             return;
@@ -142,7 +208,7 @@ public class Common extends RESTServlet {
                 .addTable(Products.TABLE)
                 .addTable(Persons.TABLE)
                 .addTable(Discounts.TABLE)
-                .addValue(Orders.ID)
+                .addValue(Orders.ID,"orderId")
                 .addValue(Discounts.ID)
                 .addValue(Products.ID)
                 .addValue(Products.PRICE)
@@ -163,6 +229,28 @@ public class Common extends RESTServlet {
             return;
         }
 
+        if(withDiscount != null) {
+            ArrayList<JsonObject> next = new ArrayList<JsonObject>();
+            for(JsonObject o: orders) {
+                JsonObjectBuilder out = Json.createObjectBuilder();
+                for(Map.Entry<String,JsonValue> entries: o.entrySet()) {
+                    out.add(entries.getKey(), entries.getValue());
+                }
+
+                try {
+                    String orderId = Integer.toString(o.getInt("orderId"));
+                    out.add("priceAdj", getDiscountedPrice(orderId));
+                } catch(SQLException e) {
+                    trySendError(response, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
+                    return;
+                }
+
+                next.add(out.build());
+            }
+
+            orders = next;
+        }
+
         JsonWriter writer = setupJson(response);
 
         try {
@@ -170,69 +258,6 @@ public class Common extends RESTServlet {
             for(JsonObject o: orders)
                 resp.add(o);
             writer.writeArray(resp.build());
-        } finally {
-            writer.close();
-        }
-    }
-
-    public void doCalculatePrice(HttpServletRequest req, HttpServletResponse response) {
-        Map<String,String[]> params = getParams(req);
-
-        String order;
-
-        try {
-            order = readParam(req, "order")[0];
-        } catch(RESTException e) {
-            trySendError(response, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
-            return;
-        }
-
-        // TODO: load policy from the db
-        TreeMap<Integer,Double> policy = new TreeMap<Integer,Double>();
-
-        policy.put(0, 1.);
-        policy.put(2, .5);
-
-        double basePrice;
-        int memberCount;
-        try {
-            JsonObject info = myData.select()
-                .addTable(Orders.TABLE)
-                .addTable(Products.TABLE)
-                .addValue(Orders.DISCOUNT)
-                .addValue(Products.PRICE)
-                .addClause(Orders.PRODUCT, Data.EQ, Products.ID)
-                .addClause(Orders.ID, Data.EQ, Data.wrap(order))
-                .execute().get(0);
-
-            {
-                Logger lgr = Logger.getLogger(this.getClass().getName());
-                lgr.log(Level.SEVERE, info.toString());
-            }
-
-            int discountId = info.getInt(Orders.DISCOUNT.split("\\.")[1]);
-            basePrice = info.getJsonNumber(Products.PRICE.split("\\.")[1]).doubleValue();
-
-            JsonObject count = myData.select()
-                .addTable(Orders.TABLE)
-                .addValue(Data.count(Orders.ID))
-                .addClause(Orders.DISCOUNT, Data.EQ, Data.wrap(discountId))
-                .execute().get(0);
-
-            memberCount = ((JsonNumber)count.values().iterator().next()).intValue();
-        } catch (SQLException e) {
-            trySendError(response, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
-            return;
-        }
-
-        double coef = policy.floorEntry(memberCount).getValue();
-
-        JsonWriter writer = setupJson(response);
-
-        try {
-            JsonObjectBuilder resp = Json.createObjectBuilder();
-            resp.add("result", coef * basePrice);
-            writer.writeObject(resp.build());
         } finally {
             writer.close();
         }

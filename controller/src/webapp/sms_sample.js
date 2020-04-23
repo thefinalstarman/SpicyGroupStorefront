@@ -172,7 +172,8 @@ window.onload = function() {
         document.getElementById("orders_discount_code").innerHTML = our_params["discount"]
 
         makeJsonRequest('/controller/common/listOrders',
-                        {'discountId': our_params['discount']}, (json, error) => {
+                        {'discountId': our_params['discount'],
+                         'withDiscount': ""}, (json, error) => {
             if(error == null) {
                 table = document.getElementById('orders_table')
 
@@ -180,8 +181,9 @@ window.onload = function() {
                     addRow(table, [
                         json[i].orderId,
                         json[i].itemId,
-                        json[i].price,
                         json[i].name,
+                        json[i].price,
+                        json[i].priceAdj,
                         json[i].personId,
                         json[i].customer
                     ])
