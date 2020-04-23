@@ -1,2 +1,2 @@
 # SpicyGroupStorefront
-The spiciest group store front for COP 3402
+The spiciest group store front for COP 4710
