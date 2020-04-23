@@ -105,10 +105,40 @@ function addProduct() {
                     })
 }
 
+var customerCount = 0
+
+function filterCustomers() {
+    params = {}
+
+    if(document.getElementById("f_name").value != "")
+        params["name"] = document.getElementById("f_name").value
+
+    if(document.getElementById("f_product").value != "")
+        params["product"] = document.getElementById("f_product").value
+
+    makeJsonRequest('/controller/sms/customerSearch', params, (json, error) => {
+        if(error == null) {
+            table = document.getElementById('customers_table')
+
+            while(customerCount > 0) {
+                table.deleteRow(-1)
+                customerCount--;
+            }
+
+            for(var i = 0; i < json.length; i++) {
+                addRow(table, [json[i].personId, json[i].name, json[i].billingAddress])
+                customerCount++;
+            }
+        }
+    })
+}
+
 var sumbitOrder = function() {}
 
 window.onload = function() {
     our_params = getParams(window.location.href)
+
+    filterCustomers()
 
     orders = document.getElementById("orders")
 
