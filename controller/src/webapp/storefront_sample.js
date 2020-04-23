@@ -137,10 +137,10 @@ window.onload = function() {
                 params[fetch[i]] = document.getElementById(fetch[i]).value
             }
 
-            params["itemId"] = our_params["checkout"]
+            if(document.getElementById("discountId").value != "")
+                params["discountId"] = document.getElementById("discountId").value
 
-            // TODO: don't hardcode this
-            params["discountId"] = 1
+            params["itemId"] = our_params["checkout"]
 
             makeJsonRequest('/controller/storefront/submitOrder',
                             params, (json, error) => {

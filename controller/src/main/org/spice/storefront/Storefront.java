@@ -33,7 +33,7 @@ public class Storefront extends RESTServlet {
         // Will item parameters be here as well?
         String name, address;
         String cardName, cardNumber, monthExp, yearExp, cvv, zip;
-        String discountID;
+        String[] discountId;
         String itemId;
 
         try {
@@ -47,7 +47,7 @@ public class Storefront extends RESTServlet {
             cvv = readParam(req, "cvv")[0];
             zip = readParam(req, "zip")[0];
 
-            discountID = readParam(req, "discountId")[0];
+            discountId = readParam(req, "discountId", false);
             itemId = readParam(req,"itemId")[0];
         } catch(RESTException e) {
             trySendError(response, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
@@ -104,11 +104,26 @@ public class Storefront extends RESTServlet {
 
         int disId, itId;
         try {
-            disId = Integer.parseInt(discountID);
             itId = Integer.parseInt(itemId);
         } catch(NumberFormatException e) {
             trySendError(response, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
             return;
+        }
+
+        if(isEmpty(discountId)) {
+            try {
+                disId = myData.insert(Discounts.TABLE).execute();
+            } catch(SQLException e) {
+                trySendError(response, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
+                return;
+            }
+        } else {
+            try {
+                disId = Integer.parseInt(discountId[0]);
+            } catch(NumberFormatException e) {
+                trySendError(response, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
+                return;
+            }
         }
 
         JsonObject order = null;
