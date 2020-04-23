@@ -85,7 +85,7 @@ window.onload = function() {
 
             for(var i = 0; i < json.length; i++) {
                 addRow(table, [makeLink(json[i].name, "?checkout=" + json[i].itemId),
-                                 json[i].price])
+                               json[i].price.toFixed(2)])
             }
         }
     })
@@ -101,7 +101,7 @@ window.onload = function() {
             if(error == null) {
                 product = json[0]
                 document.getElementById('ch_product').innerHTML += product.name
-                document.getElementById('ch_price').innerHTML += product.price
+                document.getElementById('ch_price').innerHTML += product.price.toFixed(2)
             }
         })
 
@@ -131,7 +131,7 @@ window.onload = function() {
                     document.getElementById("c_address").innerHTML += json.person.billingAddress
                     document.getElementById("c_discount").innerHTML += json.order.discountId
                     document.getElementById('c_product').innerHTML += product.name
-                    document.getElementById('c_price').innerHTML += product.price
+                    document.getElementById('c_price').innerHTML += product.price.toFixed(2)
                 }
             })
         }

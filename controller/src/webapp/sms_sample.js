@@ -149,7 +149,7 @@ window.onload = function() {
             for(var i = 0; i < json.length; i++) {
                 var id = json[i].itemId
                 addRow(table, [
-                    json[i].itemId, json[i].name, json[i].price,
+                    json[i].itemId, json[i].name, json[i].price.toFixed(2),
                     makeButton("Delete",
                                function() { deleteProduct(id); })])
             }
@@ -182,10 +182,18 @@ window.onload = function() {
                         json[i].orderId,
                         json[i].itemId,
                         json[i].name,
-                        json[i].price,
-                        json[i].priceAdj,
+                        json[i].price.toFixed(2),
+                        json[i].priceAdj.toFixed(2),
                         json[i].personId,
-                        json[i].customer
+                        json[i].customer,
+                        json[i].address,
+                        json[i].creditId,
+                        json[i].cardName,
+                        json[i].cardNumber,
+                        json[i].cardExpMonth,
+                        json[i].cardExpYear,
+                        json[i].cardCVV,
+                        json[i].cardZIP
                     ])
                 }
             }
