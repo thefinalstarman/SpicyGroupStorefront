@@ -32,9 +32,10 @@ public class Common extends RESTServlet {
     public void doListProducts(HttpServletRequest req, HttpServletResponse response) {
         Map<String,String[]> params = getParams(req);
 
-        String[] name;
+        String[] name, id;
         try {
             name = readParam(req, "name", false);
+            id = readParam(req, "id", false);
         } catch(RESTException e) {
             trySendError(response, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
             return;
@@ -48,6 +49,8 @@ public class Common extends RESTServlet {
 
             if(!isEmpty(name)) {
                 select.addClause(Products.NAME, Data.REGEX, Data.wrap(name[0]));
+            } else if(!isEmpty(id)) {
+                select.addClause(Products.ID, Data.EQ, Data.wrap(id[0]));
             }
 
             products = select.execute();
