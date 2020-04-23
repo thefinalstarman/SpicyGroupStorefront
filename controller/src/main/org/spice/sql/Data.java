@@ -50,6 +50,10 @@ public class Data {
         return "\"" + o.toString() + "\"";
     }
 
+    public static String count(String column) {
+        return "count(" + column + ")";
+    }
+
     public class Insert {
         private final String table;
         private HashMap<String,Object> values;
@@ -242,6 +246,9 @@ public class Data {
                 obj.add(column_name, rs.getBlob(column_name).toString());
             }
             else if(rsmd.getColumnType(i)==java.sql.Types.DOUBLE){
+                obj.add(column_name, rs.getDouble(column_name));
+            }
+            else if(rsmd.getColumnType(i)==java.sql.Types.DECIMAL){
                 obj.add(column_name, rs.getDouble(column_name));
             }
             else if(rsmd.getColumnType(i)==java.sql.Types.FLOAT){

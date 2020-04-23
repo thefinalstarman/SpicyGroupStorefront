@@ -1,9 +1,11 @@
 package org.spice.common;
 
-import java.util.Map;
-import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.function.BiConsumer;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -12,12 +14,13 @@ import java.sql.SQLException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
 import javax.json.Json;
-import javax.json.JsonWriter;
+import javax.json.JsonArrayBuilder;
+import javax.json.JsonNumber;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
-import javax.json.JsonArrayBuilder;
-import java.util.function.BiConsumer;
+import javax.json.JsonWriter;
 
 import org.spice.rest.RESTServlet;
 import org.spice.rest.RESTException;
@@ -118,8 +121,72 @@ public class Common extends RESTServlet {
         }
     }
 
+    public void doCalculatePrice(HttpServletRequest req, HttpServletResponse response) {
+        Map<String,String[]> params = getParams(req);
+
+        String order;
+
+        try {
+            order = readParam(req, "order")[0];
+        } catch(RESTException e) {
+            trySendError(response, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
+            return;
+        }
+
+        // TODO: load policy from the db
+        TreeMap<Integer,Double> policy = new TreeMap<Integer,Double>();
+
+        policy.put(0, 1.);
+        policy.put(2, .5);
+
+        double basePrice;
+        int memberCount;
+        try {
+            JsonObject info = myData.select()
+                .addTable(Orders.TABLE)
+                .addTable(Products.TABLE)
+                .addValue(Orders.DISCOUNT)
+                .addValue(Products.PRICE)
+                .addClause(Orders.PRODUCT, Data.EQ, Products.ID)
+                .addClause(Orders.ID, Data.EQ, Data.wrap(order))
+                .execute().get(0);
+
+            {
+                Logger lgr = Logger.getLogger(this.getClass().getName());
+                lgr.log(Level.SEVERE, info.toString());
+            }
+
+            int discountId = info.getInt(Orders.DISCOUNT.split("\\.")[1]);
+            basePrice = info.getJsonNumber(Products.PRICE.split("\\.")[1]).doubleValue();
+
+            JsonObject count = myData.select()
+                .addTable(Orders.TABLE)
+                .addValue(Data.count(Orders.ID))
+                .addClause(Orders.DISCOUNT, Data.EQ, Data.wrap(discountId))
+                .execute().get(0);
+
+            memberCount = ((JsonNumber)count.values().iterator().next()).intValue();
+        } catch (SQLException e) {
+            trySendError(response, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
+            return;
+        }
+
+        double coef = policy.floorEntry(memberCount).getValue();
+
+        JsonWriter writer = setupJson(response);
+
+        try {
+            JsonObjectBuilder resp = Json.createObjectBuilder();
+            resp.add("result", coef * basePrice);
+            writer.writeObject(resp.build());
+        } finally {
+            writer.close();
+        }
+    }
+
     public Common() {
         registerMethod("listProducts", this::doListProducts);
         registerMethod("listDiscounts", this::doListDiscounts);
+        registerMethod("calculatePrice", this::doCalculatePrice);
     }
 }
