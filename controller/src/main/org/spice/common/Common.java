@@ -65,7 +65,34 @@ public class Common extends RESTServlet {
         }
     }
 
+    public void doListDiscounts(HttpServletRequest req, HttpServletResponse response) {
+        Map<String,String[]> params = getParams(req);
+
+        List<JsonObject> discounts = null;
+        try {
+            discounts = myData.select()
+                .addTable(Discounts.TABLE)
+                .addValue(Data.WILDCARD)
+                .execute();
+        } catch (SQLException e) {
+            trySendError(response, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
+            return;
+        }
+
+        JsonWriter writer = setupJson(response);
+
+        try {
+            JsonArrayBuilder resp = Json.createArrayBuilder();
+            for(JsonObject d: discounts)
+                resp.add(d);
+            writer.writeArray(resp.build());
+        } finally {
+            writer.close();
+        }
+    }
+
     public Common() {
         registerMethod("listProducts", this::doListProducts);
+        registerMethod("listDiscounts", this::doListDiscounts);
     }
 }
