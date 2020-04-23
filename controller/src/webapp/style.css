@@ -20,7 +20,8 @@ body {
     justify-content: space-between;
     background-color: #76affa;
     padding:10px;
-    font-size:20;
+    font-size:20px;
+    align-items: center;
 }
 
 .content {
@@ -28,30 +29,38 @@ body {
     padding:15px;
 }
 
-a.btn {
+.btn {
     text-decoration: none;
-    color:rgb(0, 0, 0);
+    color:rgb(44, 44, 44);
     background-color:rgb(179, 231, 183);
-    padding:5px;
+    padding:8px;
     cursor:pointer;
-    border-radius:5px;
+    border-radius:3px;
+    border-width:0px;
 }
 
-a.btn:hover {
+.btn:hover {
     background-color:rgb(115, 173, 119);
+}
+
+.btn-cancel {
+    background-color: rgb(224, 152, 152);
+}
+
+.btn-cancel:hover {
+    background-color: rgb(177, 111, 111);
 }
 
 table {
     width: 100%;
 }
 
-table, th, td {
-    border: 1px solid black;
-    border-collapse:collapse;
-}
-
 th, td {
     padding:10px;
+}
+
+tr:nth-child(odd) {
+    background-color: rgb(190, 190, 190);
 }
 
 th {

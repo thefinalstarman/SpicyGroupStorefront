@@ -66,6 +66,7 @@ function makeLink(text, uri) {
 function makeButton(text, action) {
     ret = document.createElement("INPUT")
     ret.type = "button"
+    ret.setAttribute('class', 'btn btn-cancel')
     ret.value = text
     ret.onclick = action
     return ret
