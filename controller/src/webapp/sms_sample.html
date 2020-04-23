@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script src="sms_sample.js"> </script>
+    </head>
+
+    <h1> Admin Portal </h1>
+
+    <body>
+        <span id="products">
+            <h2> Products </h2>
+
+            <table id="listing_table" style="width: 100%">
+                <tr>
+                    <td><h3>Id</h3></td>
+                    <td><h3>Product</h3></td>
+                    <td><h3>Price</h3></td>
+                </tr>
+
+                <form action="javascript:addProduct()">
+                    <tr>
+                        <td></td>
+                        <td><input type="text" id="name"></td>
+                        <td><input type="text" id="price"></td>
+                        <td><input type="submit" value="Add"></td>
+                        <td><input type="reset" value="Reset"></td>
+                    </tr>
+                </form>
+            </table>
+
+        </span>
+
+        <span id="discounts">
+            <h2> Discounts </h2>
+
+            <table id="discounts_table" style="width: 100%">
+                <tr>
+                    <td><h3>Discount Code</h3></td>
+                    <td><h3>Created</h3></td>
+                    <td><h3>Expires</h3></td>
+                </tr>
+            </table>
+        </span>
+
+        <span id="orders" style="display:none">
+            <h2> Orders for <div id="orders_discount_code" style="display:inline"> </h2>
+
+            <table id="orders_table" style="width: 100%">
+                <tr>
+                    <td><h3>Order Id</h3></td>
+                    <td><h3>Product Id</h3></td>
+                    <td><h3>Base Price</h3></td>
+                    <td><h3>Product Name</h3></td>
+                    <td><h3>Customer Id</h3></td>
+                    <td><h3>Customer Name</h3></td>
+                </tr>
+            </table>
+        </span>
+    </body>
+
+</html>

@@ -130,6 +130,10 @@ public class Data {
             return this;
         }
 
+        public Select addValue(String name, String alias) {
+            return addValue(name + " as " + alias);
+        }
+
         public Select addClause(String clause) {
             clauses.add(clause);
             return this;
@@ -227,7 +231,7 @@ public class Data {
 
         JsonObjectBuilder obj = Json.createObjectBuilder();
         for(int i = 1; i <= numColumns; i++) {
-            String column_name = rsmd.getColumnName(i);
+            String column_name = rsmd.getColumnLabel(i);
 
             rs.getObject(column_name);
             if(rs.wasNull())

@@ -124,6 +124,57 @@ public class Common extends RESTServlet {
         }
     }
 
+    public void doListOrders(HttpServletRequest req, HttpServletResponse response) {
+        Map<String,String[]> params = getParams(req);
+
+        String[] discountId;
+        try {
+            discountId = readParam(req, "discountId", false);
+        } catch(RESTException e) {
+            trySendError(response, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
+            return;
+        }
+
+        List<JsonObject> orders = null;
+        try {
+            Data.Select select = myData.select()
+                .addTable(Orders.TABLE)
+                .addTable(Products.TABLE)
+                .addTable(Persons.TABLE)
+                .addTable(Discounts.TABLE)
+                .addValue(Orders.ID)
+                .addValue(Discounts.ID)
+                .addValue(Products.ID)
+                .addValue(Products.PRICE)
+                .addValue(Products.NAME)
+                .addValue(Persons.ID)
+                .addValue(Persons.NAME, "customer")
+                .addClause(Orders.PERSON, Data.EQ, Persons.ID)
+                .addClause(Orders.PRODUCT, Data.EQ, Products.ID)
+                .addClause(Orders.DISCOUNT, Data.EQ, Discounts.ID);
+
+            if(!isEmpty(discountId)) {
+                select.addClause(Discounts.ID, Data.EQ, Data.wrap(discountId[0]));
+            }
+
+            orders = select.execute();
+        } catch (SQLException e) {
+            trySendError(response, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
+            return;
+        }
+
+        JsonWriter writer = setupJson(response);
+
+        try {
+            JsonArrayBuilder resp = Json.createArrayBuilder();
+            for(JsonObject o: orders)
+                resp.add(o);
+            writer.writeArray(resp.build());
+        } finally {
+            writer.close();
+        }
+    }
+
     public void doCalculatePrice(HttpServletRequest req, HttpServletResponse response) {
         Map<String,String[]> params = getParams(req);
 
@@ -190,6 +241,7 @@ public class Common extends RESTServlet {
     public Common() {
         registerMethod("listProducts", this::doListProducts);
         registerMethod("listDiscounts", this::doListDiscounts);
+        registerMethod("listOrders", this::doListOrders);
         registerMethod("calculatePrice", this::doCalculatePrice);
     }
 }

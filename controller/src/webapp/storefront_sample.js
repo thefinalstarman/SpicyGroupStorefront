@@ -25,23 +25,6 @@ function makeJsonRequest(uri, params, callback) {
     }
 }
 
-function makeRequest() {
-    let uri = "/controller/sample_rest/sum";
-    params = {
-        a: document.getElementById("a").value,
-        b: document.getElementById("b").value
-    }
-    makeJsonRequest(uri, params, (json,error) => {
-        if(error == null) {
-            document.getElementById('result').innerHTML = "Result = " + json['result']
-            document.getElementById('error').innerHTML = ""
-        } else {
-            document.getElementById('result').innerHTML = ""
-            document.getElementById('error').innerHTML = "Error " + error['status'] + ": " + error['msg']
-        }
-    })
-}
-
 function isElement(element) {
     return element instanceof Element || element instanceof HTMLDocument;
 }
@@ -85,12 +68,6 @@ function makePara(text, id = null) {
     ret.innerHTML = text
     ret.id = id
     return ret
-}
-
-function makeCheckoutForm() {
-    ret = document.createElement("FORM")
-
-
 }
 
 var sumbitOrder = function() {}
