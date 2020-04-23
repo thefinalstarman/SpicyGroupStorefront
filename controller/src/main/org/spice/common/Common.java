@@ -226,7 +226,8 @@ public class Common extends RESTServlet {
                 .addValue(Credits.ZIP, "cardZIP")
                 .addClause(Orders.PERSON, Data.EQ, Persons.ID)
                 .addClause(Orders.PRODUCT, Data.EQ, Products.ID)
-                .addClause(Orders.DISCOUNT, Data.EQ, Discounts.ID);
+                .addClause(Orders.DISCOUNT, Data.EQ, Discounts.ID)
+                .addClause(Orders.CREDIT, Data.EQ, Credits.ID);
 
             if(!isEmpty(discountId)) {
                 select.addClause(Discounts.ID, Data.EQ, Data.wrap(discountId[0]));
