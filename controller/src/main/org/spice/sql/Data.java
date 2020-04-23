@@ -30,7 +30,10 @@ public class Data {
 
     public static final String WILDCARD = "*";
     public static final String EQ = "=";
+    public static final String LESS = "<";
+    public static final String GREATER = ">";
     public static final String REGEX = "regexp";
+    public static final String CURRENT_TIMESTAMP = "current_timestamp";
 
     public Data() {
         try {

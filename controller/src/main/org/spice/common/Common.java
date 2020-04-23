@@ -68,12 +68,39 @@ public class Common extends RESTServlet {
     public void doListDiscounts(HttpServletRequest req, HttpServletResponse response) {
         Map<String,String[]> params = getParams(req);
 
+        String[] expiresBefore, expiresAfter, expiredNow;
+        try {
+            expiresBefore = readParam(req, "expiresBefore", false);
+            expiresAfter = readParam(req, "expiresAfter", false);
+            expiredNow = readParam(req, "expiredNow", false);
+        } catch(RESTException e) {
+            trySendError(response, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
+            return;
+        }
+
         List<JsonObject> discounts = null;
         try {
-            discounts = myData.select()
+            Data.Select select = myData.select()
                 .addTable(Discounts.TABLE)
-                .addValue(Data.WILDCARD)
-                .execute();
+                .addValue(Data.WILDCARD);
+
+            if(expiredNow != null) {
+                select.addClause(Discounts.EXP,
+                                 Data.LESS,
+                                 Data.CURRENT_TIMESTAMP);
+            } else if(!isEmpty(expiresBefore)) {
+                select.addClause(Discounts.EXP,
+                                 Data.LESS,
+                                 Data.wrap(expiresBefore[0]));
+            }
+
+            if(!isEmpty(expiresAfter)) {
+                select.addClause(Discounts.EXP,
+                                 Data.GREATER,
+                                 Data.wrap(expiresAfter[0]));
+            }
+
+            discounts = select.execute();
         } catch (SQLException e) {
             trySendError(response, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
             return;
