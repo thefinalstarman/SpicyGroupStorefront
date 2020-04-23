@@ -125,7 +125,6 @@ public class SMS extends RESTServlet {
             select.addTable(Persons.TABLE);
             select.addValue(Persons.ID);
             select.addValue(Persons.NAME);
-            select.addValue(Persons.CREDIT);
             select.addValue(Persons.ADDRESS);
             if(!isEmpty(name)) select.addClause(Persons.NAME,Data.REGEX,Data.wrap(name[0]));
             if(!isEmpty(product)) {

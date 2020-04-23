@@ -32,14 +32,21 @@ public class Storefront extends RESTServlet {
 
         // Will item parameters be here as well?
         String name, address;
-
-        String credit, discountID;
+        String cardName, cardNumber, monthExp, yearExp, cvv, zip;
+        String discountID;
         String itemId;
 
         try {
             name = readParam(req, "name")[0];
             address = readParam(req, "address")[0];
-            credit = readParam(req, "credit")[0];
+
+            cardName = readParam(req, "cardName")[0];
+            cardNumber = readParam(req, "cardNumber")[0];
+            monthExp = readParam(req, "monthExp")[0];
+            yearExp = readParam(req, "yearExp")[0];
+            cvv = readParam(req, "cvv")[0];
+            zip = readParam(req, "zip")[0];
+
             discountID = readParam(req, "discountId")[0];
             itemId = readParam(req,"itemId")[0];
         } catch(RESTException e) {
@@ -53,9 +60,8 @@ public class Storefront extends RESTServlet {
         JsonObject person = null;
         try{
             personId = myData.insert(Persons.TABLE)
-                .add("name", name)
-                .add("billingAddress", address)
-                .add("credit", credit)
+                .add(Persons.NAME, name)
+                .add(Persons.ADDRESS, address)
                 .execute();
 
             person = myData.select()
@@ -70,6 +76,32 @@ public class Storefront extends RESTServlet {
 
         result.add("person", person);
 
+        int creditId;
+        JsonObject credit = null;
+
+        try {
+            creditId = myData.insert(Credits.TABLE)
+                .add(Credits.PERSON, personId)
+                .add(Credits.NAME, cardName)
+                .add(Credits.NUMBER, cardNumber)
+                .add(Credits.MONTH, monthExp)
+                .add(Credits.YEAR, yearExp)
+                .add(Credits.CVV, cvv)
+                .add(Credits.ZIP, zip)
+                .execute();
+
+            credit = myData.select()
+                .addTable(Credits.TABLE)
+                .addValue(Data.WILDCARD)
+                .addClause(Credits.ID, Data.EQ, Data.wrap(creditId))
+                .execute().get(0);
+        } catch (SQLException e) {
+            trySendError(response, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
+            return;
+        }
+
+        result.add("credit", credit);
+
         int disId, itId;
         try {
             disId = Integer.parseInt(discountID);
@@ -82,9 +114,10 @@ public class Storefront extends RESTServlet {
         JsonObject order = null;
         try{
             int id = myData.insert(Orders.TABLE)
-                .add("itemId", itId)
-                .add("discountId", disId)
-                .add("personId", personId)
+                .add(Orders.PRODUCT, itId)
+                .add(Orders.DISCOUNT, disId)
+                .add(Orders.PERSON, personId)
+                .add(Orders.CREDIT, creditId)
                 .execute();
 
             order = myData.select()
