@@ -14,13 +14,14 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.json.Json;
 import javax.json.JsonWriter;
+import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonArrayBuilder;
 import java.util.function.BiConsumer;
 
 import org.spice.rest.RESTServlet;
 import org.spice.rest.RESTException;
-import org.spice.sql.Data;
+import org.spice.sql.*;
 
 public class SMS extends RESTServlet {
     Data myData = new Data();
@@ -29,13 +30,9 @@ public class SMS extends RESTServlet {
         Map<String,String[]> params = getParams(req);
 
         String name, _price;
-        String[] category;
         try {
             name = readParam(req, "name")[0];
             _price = readParam(req, "price")[0];
-
-            // optional for now
-            category = readParam(req, "category", false);
         } catch(RESTException e) {
             trySendError(response, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
             return;
@@ -49,9 +46,18 @@ public class SMS extends RESTServlet {
             return;
         }
 
-        Data.Product inserted = null;
+        JsonObject inserted = null;
         try {
-            inserted = myData.createProduct(name, price);
+            int id = myData.insert(Products.TABLE)
+                .add(Products.NAME, name)
+                .add(Products.PRICE, price)
+                .execute();
+
+            inserted = myData.select()
+                .addTable(Products.TABLE)
+                .addValue(Data.WILDCARD)
+                .addClause(Products.ID, Data.EQ, Data.wrap(id))
+                .execute().get(0);
         } catch (SQLException e) {
             trySendError(response, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
             return;
@@ -60,7 +66,7 @@ public class SMS extends RESTServlet {
         JsonWriter writer = setupJson(response);
 
         try {
-            writer.writeObject(inserted.toJson());
+            writer.writeObject(inserted);
         } finally {
             writer.close();
         }
@@ -69,25 +75,19 @@ public class SMS extends RESTServlet {
     public void doDeleteProduct(HttpServletRequest req, HttpServletResponse response) {
         Map<String,String[]> params = getParams(req);
 
-        String _id;
+        String id;
         try {
-            _id = readParam(req, "id")[0];
+            id = readParam(req, "id")[0];
         } catch(RESTException e) {
-            trySendError(response, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
-            return;
-        }
-
-        int id;
-        try {
-            id = Integer.parseInt(_id);
-        } catch(NumberFormatException e) {
             trySendError(response, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
             return;
         }
 
         boolean result;
         try {
-            result = myData.deleteProduct(id);
+            result = myData.delete(Products.TABLE)
+                .addClause(Products.ID,Data.EQ,id)
+                .execute() > 0;
         } catch(SQLException e) {
             trySendError(response, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
             return;
@@ -119,10 +119,23 @@ public class SMS extends RESTServlet {
 
         // TODO: find the list of matching people
 
-        List<Data.Person> result;
+        List<JsonObject> result = null;
         try {
-            result = myData.searchCustomers(isEmpty(name) ? null : name[0],
-                                            isEmpty(product) ? null : product[0]);
+            Data.Select select = myData.select();
+            select.addTable(Persons.TABLE);
+            select.addValue(Persons.ID);
+            select.addValue(Persons.NAME);
+            select.addValue(Persons.CREDIT);
+            select.addValue(Persons.ADDRESS);
+            if(!isEmpty(name)) select.addClause(Persons.NAME,Data.REGEX,Data.wrap(name[0]));
+            if(!isEmpty(product)) {
+                select.addTable(Products.TABLE);
+                select.addTable(Orders.TABLE);
+                select.addClause(Orders.PERSON,Data.EQ,Persons.ID);
+                select.addClause(Orders.PRODUCT,Data.EQ,Products.ID);
+                select.addClause(Products.NAME,Data.REGEX,Data.wrap(product[0]));
+            }
+            result = select.execute();
         } catch(SQLException e) {
             trySendError(response, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
             return;
@@ -133,8 +146,8 @@ public class SMS extends RESTServlet {
         try {
             JsonArrayBuilder resp = Json.createArrayBuilder();
 
-            for(Data.Person p: result) {
-                resp.add(p.toJson());
+            for(JsonObject o: result) {
+                resp.add(o);
             }
 
             writer.writeArray(resp.build());
@@ -143,9 +156,7 @@ public class SMS extends RESTServlet {
         }
     }
 
-
     public SMS() {
-
         registerMethod("addProduct", this::doAddProduct);
         registerMethod("deleteProduct", this::doDeleteProduct);
         registerMethod("customerSearch", this::doCustomerSearch);

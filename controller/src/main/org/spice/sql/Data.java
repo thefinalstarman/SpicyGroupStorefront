@@ -4,24 +4,33 @@ import javax.json.Json;
 import javax.json.JsonWriter;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonObject;
+import javax.json.JsonValue;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.PreparedStatement;
+import java.sql.Statement;
+import java.sql.ResultSetMetaData;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class Data {
-    Connection con;
+    private Connection con;
     private final String user = "testuser";
     private final String pass = "test623";
     private final String url = "jdbc:mysql://localhost:3306/storeback?serverTimezone=UTC";
+
+    public static final String WILDCARD = "*";
+    public static final String EQ = "=";
+    public static final String REGEX = "regexp";
 
     public Data() {
         try {
@@ -34,260 +43,233 @@ public class Data {
         }
     }
 
-    public class Product {
-        public final int id; // itemId
-        public final String name;
-        public final double price;
+    public static String wrap(Object o) {
+        return "\"" + o.toString() + "\"";
+    }
 
-        protected Product(int id, String name, double price) {
-            this.id = id;
-            this.name = name;
-            this.price = price;
+    public class Insert {
+        private final String table;
+        private HashMap<String,Object> values;
+
+        protected Insert(String table) {
+            this.table = table;
+            this.values = new HashMap<String,Object>();
         }
 
-        public JsonObject toJson() {
-            JsonObjectBuilder builder = Json.createObjectBuilder();
-            builder.add("id", id);
-            if(name != null) builder.add("name", name);
-            builder.add("price", price);
-            return builder.build();
+        public Insert add(String key, Object value) {
+            values.put(key, value);
+            return this;
+        }
+
+        public PreparedStatement build() throws SQLException {
+            StringBuilder sb = new StringBuilder("insert into ");
+            String[] keys = values.keySet().toArray(new String[0]);
+            sb.append(table);
+            sb.append("("); {
+                int idx = 0;
+                for(String key: keys) {
+                    if(idx++ > 0) sb.append(",");
+                    sb.append(key);
+                }
+            } sb.append(") values ("); {
+                for(int idx = 0; idx < keys.length; idx++) {
+                    if(idx > 0) sb.append(",");
+                    sb.append("?");
+                }
+            } sb.append(")");
+
+            PreparedStatement ret = con.prepareStatement(sb.toString(), PreparedStatement.RETURN_GENERATED_KEYS);
+
+            for(int idx = 0; idx < keys.length; idx++) {
+                ret.setObject(idx+1, values.get(keys[idx]));
+            }
+
+            return ret;
+        }
+
+        public int execute() throws SQLException {
+            PreparedStatement st = build();
+            st.executeUpdate();
+            ResultSet rs = st.getGeneratedKeys();
+            if(rs.next()) return rs.getInt(1);
+            return -1;
+        }
+    };
+
+    public Insert insert(String tableName) { return new Insert(tableName); }
+
+    public class Select {
+        private ArrayList<String> tables;
+        private ArrayList<String> values;
+        private ArrayList<String> clauses;
+
+        protected Select() {
+            tables = new ArrayList<String>();
+            values = new ArrayList<String>();
+            clauses = new ArrayList<String>();
+        }
+
+        public Select addTable(String name) {
+            tables.add(name);
+            return this;
+        }
+
+        public Select addTable(String name, String abbrev) {
+            return addTable(name + " " + abbrev);
+        }
+
+        public Select addValue(String name) {
+            values.add(name);
+            return this;
+        }
+
+        public Select addClause(String clause) {
+            clauses.add(clause);
+            return this;
+        }
+
+        public Select addClause(String left, String type, String right) {
+            return addClause(left + " " + type + " " + right);
+        }
+
+        public PreparedStatement build() throws SQLException {
+            StringBuilder sb = new StringBuilder("select ");
+            {
+                int idx = 0;
+                for(String value: values) {
+                    if(idx++ > 0) sb.append(",");
+                    sb.append(value);
+                }
+            } sb.append(" from "); {
+                int idx = 0;
+                for(String table: tables) {
+                    if(idx++ > 0) sb.append(",");
+                    sb.append(table);
+                }
+            }
+            {
+                int idx = 0;
+                for(String clause: clauses) {
+                    if(idx++ > 0) sb.append(" and ");
+                    else sb.append(" where ");
+                    sb.append(clause);
+                }
+            }
+
+            return con.prepareStatement(sb.toString(), PreparedStatement.RETURN_GENERATED_KEYS);
+        }
+
+        public List<JsonObject> execute() throws SQLException {
+            PreparedStatement st = build();
+            ResultSet rs = st.executeQuery();
+
+            ArrayList<JsonObject> ret = new ArrayList<JsonObject>();
+            while(rs.next()) {
+                ret.add(jsonFromResults(rs));
+            }
+            return ret;
         }
     }
 
-    public Product createProduct(String name, double price) throws SQLException {
-        PreparedStatement ps =
-            con.prepareStatement("insert into Products(name,price) values(?,?)",
-                                 PreparedStatement.RETURN_GENERATED_KEYS);
-        ps.setString(1, name);
-        ps.setDouble(2, price);
-        ps.executeUpdate();
+    public Select select() { return new Select(); }
 
-        int id = -1;
-        ResultSet rs = ps.getGeneratedKeys();
-        if(rs.next()) {
-            id = rs.getInt(1);
+    public class Delete {
+        private final String table;
+        private ArrayList<String> clauses;
+
+        protected Delete(String table) {
+            this.table = table;
+            clauses = new ArrayList<String>();
         }
 
-        return new Product(id, name, price);
-    }
-
-    public Product getProductById(int _id) throws SQLException {
-        PreparedStatement ps =
-            con.prepareStatement("select itemId,name,price from Products where id=?");
-
-        ps.setInt(1, _id);
-
-        ResultSet rs = ps.executeQuery();
-
-        int id = -1;
-        String name = "";
-        double price = 0;
-        if(rs.next()) {
-            id = rs.getInt(1);
-            name = rs.getString(2);
-            price = rs.getDouble(3);
+        public Delete addClause(String clause) {
+            clauses.add(clause);
+            return this;
         }
 
-        return new Product(id, name, price);
-    }
-
-    public boolean deleteProduct(int id) throws SQLException {
-        PreparedStatement ps =
-            con.prepareStatement("delete from Products where itemId=?");
-
-        ps.setInt(1, id);
-        return ps.executeUpdate() > 0;
-    }
-
-    // From here on, all Person related JDBC functions will be inserted.
-    // Adding Persons and Searching mostly important functions.
-    public class Person {
-        public final int id; // personId
-        public final String name;
-        public final String credit;
-        public final String address; // billingAddress
-
-        protected Person(int id, String name, String credit, String address) {
-            this.id = id;
-            this.name = name;
-            this.credit = credit;
-            this.address = address;
+        public Delete addClause(String left, String type, String right) {
+            return addClause(left + " " + type + " " + right);
         }
 
-        public JsonObject toJson() {
-            JsonObjectBuilder builder = Json.createObjectBuilder();
-            builder.add("id", id);
-            if(name != null) builder.add("name", name);
-            if(credit != null) builder.add("credit", credit);
-            if(address != null) builder.add("address", address);
-            return builder.build();
+        public PreparedStatement build() throws SQLException {
+            StringBuilder sb = new StringBuilder("delete from ");
+            sb.append(table);
+            {
+                int idx = 0;
+                for(String clause: clauses) {
+                    if(idx++ > 0) sb.append(" and ");
+                    else sb.append(" where ");
+                    sb.append(clause);
+                }
+            }
+
+            return con.prepareStatement(sb.toString(), PreparedStatement.RETURN_GENERATED_KEYS);
+        }
+
+        public int execute() throws SQLException {
+            PreparedStatement st = build();
+            return st.executeUpdate();
         }
     }
 
-    public Person createPerson(String name, String address, String credit) throws SQLException {
-        PreparedStatement ps = con.prepareStatement("insert into Persons(name, credit, billingAddress) values(?,?,?)",
-                                PreparedStatement.RETURN_GENERATED_KEYS);
-        ps.setString(1,name);
-        ps.setString(2,address);
-        ps.setString(3,credit);
-        ps.executeUpdate();
+    public Delete delete(String table) { return new Delete(table); }
 
-        int cid = -1;
-        ResultSet rs = ps.getGeneratedKeys();
-        while(rs.next()) {
-            cid = rs.getInt(1);
+    public static JsonObject jsonFromResults(ResultSet rs) throws SQLException {
+        ResultSetMetaData rsmd = rs.getMetaData();
+        int numColumns = rsmd.getColumnCount();
+
+        JsonObjectBuilder obj = Json.createObjectBuilder();
+        for(int i = 1; i <= numColumns; i++) {
+            String column_name = rsmd.getColumnName(i);
+
+            rs.getObject(column_name);
+            if(rs.wasNull())
+                continue;
+
+            if(rsmd.getColumnType(i)==java.sql.Types.ARRAY){
+                obj.add(column_name, rs.getArray(column_name).toString());
+            }
+            else if(rsmd.getColumnType(i)==java.sql.Types.BIGINT){
+                obj.add(column_name, rs.getInt(column_name));
+            }
+            else if(rsmd.getColumnType(i)==java.sql.Types.BOOLEAN){
+                obj.add(column_name, rs.getBoolean(column_name));
+            }
+            else if(rsmd.getColumnType(i)==java.sql.Types.BLOB){
+                obj.add(column_name, rs.getBlob(column_name).toString());
+            }
+            else if(rsmd.getColumnType(i)==java.sql.Types.DOUBLE){
+                obj.add(column_name, rs.getDouble(column_name));
+            }
+            else if(rsmd.getColumnType(i)==java.sql.Types.FLOAT){
+                obj.add(column_name, rs.getFloat(column_name));
+            }
+            else if(rsmd.getColumnType(i)==java.sql.Types.INTEGER){
+                obj.add(column_name, rs.getInt(column_name));
+            }
+            else if(rsmd.getColumnType(i)==java.sql.Types.NVARCHAR){
+                obj.add(column_name, rs.getNString(column_name));
+            }
+            else if(rsmd.getColumnType(i)==java.sql.Types.VARCHAR){
+                obj.add(column_name, rs.getString(column_name));
+            }
+            else if(rsmd.getColumnType(i)==java.sql.Types.TINYINT){
+                obj.add(column_name, rs.getInt(column_name));
+            }
+            else if(rsmd.getColumnType(i)==java.sql.Types.SMALLINT){
+                obj.add(column_name, rs.getInt(column_name));
+            }
+            else if(rsmd.getColumnType(i)==java.sql.Types.DATE){
+                obj.add(column_name, rs.getDate(column_name).toString());
+            }
+            else if(rsmd.getColumnType(i)==java.sql.Types.TIMESTAMP){
+                obj.add(column_name, rs.getTimestamp(column_name).toString());
+            }
+            else{
+                obj.add(column_name, rs.getObject(column_name).toString());
+            }
         }
 
-        return new Person(cid, name, credit, address); //Added by Kenneth, setting up when users add the order.
-    }
-
-    public List<Person> searchCustomers(String name,
-                                        String product) throws SQLException {
-        StringBuilder qry = new StringBuilder("select distinct");
-        qry.append(" P.personId, P.name, P.credit, P.billingAddress");
-        qry.append(" from Orders O, Persons P, Products I");
-
-        boolean first = true;
-
-        if(name != null) {
-            if(first) { first = false; qry.append(" where");}
-            else { qry.append(" and"); }
-            qry.append(" P.name regexp ?");
-        }
-
-        if(product != null) {
-            if(first) { first = false; qry.append(" where");}
-            else { qry.append(" and"); }
-            qry.append(" O.personId=P.personId");
-            qry.append(" and O.itemId=I.itemId");
-            qry.append(" and I.name regexp ?");
-        }
-
-        PreparedStatement ps = con.prepareStatement(qry.toString());
-
-        int idx = 1;
-        if(name != null) ps.setString(idx++, name);
-        if(product != null) ps.setString(idx++, product);
-
-        ResultSet rs = ps.executeQuery();
-
-        ArrayList<Person> ret = new ArrayList<Person>();
-
-        while(rs.next()) {
-            ret.add(new Person(rs.getInt(1),
-                               rs.getString(2),
-                               rs.getString(3),
-                               rs.getString(4)));
-        }
-
-        return ret;
-    }
-
-    // Here will be the public class for Discounts.
-    // All methods pertaining to discounts will be added here (adding, searching, etc).
-    public class Discounts {
-        public final int discId;
-        public final Date createdDate;
-
-        protected Discounts(int discId, Date createdDate) {
-            this.discId = discId;
-            this.createdDate = createdDate;
-        }
-
-        public JsonObject toJson() {
-            JsonObjectBuilder builder = Json.createObjectBuilder();
-            builder.add("discId", discId);
-
-            builder.add("createdDate", createdDate.toString());
-            return builder.build();
-        }
-    }
-
-        //Creating discount codes, taking in only the generated int string.
-        // Created the date here as a reference.
-
-    public Discounts createDiscount() throws SQLException
-    {
-        PreparedStatement ps = con.prepareStatement("insert into Discounts() values()",
-                            PreparedStatement.RETURN_GENERATED_KEYS);
-
-        ps.executeUpdate();
-
-        int id = -1;
-        Date newDate = null;
-
-        ResultSet rs = ps.getGeneratedKeys();
-
-        if(rs.next()) {
-            id = rs.getInt(1);
-        }
-
-        return new Discounts(id, newDate);
-    }
-
-        // Searching Discount codes method.
-    public Discounts searchDiscount (int discountId) throws SQLException
-    {
-        PreparedStatement ps = con.prepareStatement("select discountId,dateCreated from Discounts where id=?");
-
-        ps.setInt(1, discountId);
-
-        ResultSet rs = ps.executeQuery();
-
-        int discountid = -1;
-        Date dateCreated = null;
-
-        if(rs.next()) {
-            discountid = rs.getInt(1);
-            dateCreated = rs.getDate(2);
-        }
-
-        return new Discounts(discountid, dateCreated);
-    }
-
-
-    // Adding onto this, the Orders class.
-    // below will be the functions that take in everything.
-    public class Orders {
-        public final int personId;
-        public final int itemId;
-        public final int discountId;
-        public final int orderId;
-
-        Orders(int orderId, int itemId, int discountId, int personId)
-        {
-            this.orderId = orderId;
-            this.discountId = discountId;
-            this.itemId = itemId;
-            this.personId = personId;
-        }
-
-        public JsonObject toJson() {
-            JsonObjectBuilder builder = Json.createObjectBuilder();
-            builder.add("orderId", orderId);
-            builder.add("itemId", itemId);
-            builder.add("discountId", discountId);
-            builder.add("personId", personId);
-            return builder.build();
-        }
-    }
-
-    public Orders createOrder(int itemId, int discountId, int personId) throws SQLException {
-        PreparedStatement ps = con.prepareStatement("insert into Orders(itemId,discountId,personId) values(?,?,?)",
-                            PreparedStatement.RETURN_GENERATED_KEYS);
-        ps.setInt(1, itemId);
-        ps.setInt(2, discountId);
-        ps.setInt(3, personId);
-
-        ps.executeUpdate();
-
-        int id = -1;
-        ResultSet rs = ps.getGeneratedKeys();
-
-        if(rs.next()) {
-            id = rs.getInt(1);
-        }
-
-        return new Orders(id, itemId,discountId,personId);
+        return obj.build();
     }
 }
