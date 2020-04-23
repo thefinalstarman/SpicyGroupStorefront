@@ -112,7 +112,7 @@ public class Storefront extends RESTServlet {
 
         JsonObjectBuilder result = Json.createObjectBuilder();
         try{
-            dataDiscount = myDataSt.createDiscount();
+            dataDiscount = myData.createDiscount();
         } catch(SQLException e) {
             trySendError(response, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
             return;
