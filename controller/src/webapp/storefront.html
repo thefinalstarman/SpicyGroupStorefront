@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script src="storefront.js"> </script>
+        <link rel="stylesheet" href="style.css">
+    </head>
+
+    <body>
+        <div class="container">
+            <div class="header">
+                <span class="brand">Spicy Group Storefront</span>
+                <a class="btn" href="sms.html">Management</a>
+            </div>
+            <div class="content">
+                <span id="listing">
+                    <table id="listing_table" style="width: 100%">
+                        <tr>
+                            <th><h3>Product</h3></th>
+                            <th><h3>Price</h3></th>
+                        </tr>
+                    </table>
+                </span>
+
+                <span id="checkout" style="display: none">
+                    <h2> Checkout </h2>
+                    <span>
+                        <div id="ch_product"> <b> Product Name: </b> </div>
+                        <div id="ch_price"> <b> Base Price: </b> </div>
+                        <br>
+                    </span>
+
+                    <form action="javascript:submitOrder()">
+                        <table>
+                            <tr>
+                                <td> Name:</td>
+                                <td> <input type="text" id="name"> </td>
+                            </tr>
+                            <tr>
+                                <td> Address:</td>
+                                <td> <input type="text" id="address"> </td>
+                            </tr>
+                            <tr>
+                                <td> Discount Code:</td>
+                                <td> <input type="text" id="discountId"> </td>
+                            </tr>
+
+                            <tr> <td> <br> <b> Card Info </b> </td> </tr>
+                            <tr>
+                                <td> Cardholder's Name:</td>
+                                <td> <input type="text" id="cardName"> </td>
+                            </tr>
+                            <tr>
+                                <td> Card Number:</td>
+                                <td> <input type="text" id="cardNumber"> </td>
+                            </tr>
+                            <tr>
+                                <td> Month Exp:</td>
+                                <td> <input type="text" id="monthExp"> </td>
+                            </tr>
+                            <tr>
+                                <td> Year Exp:</td>
+                                <td> <input type="text" id="yearExp"> </td>
+                            </tr>
+                            <tr>
+                                <td> cvv:</td>
+                                <td> <input type="text" id="cvv"> </td>
+                            </tr>
+                            <tr>
+                                <td> zip:</td>
+                                <td> <input type="text" id="zip"> </td>
+                            </tr>
+                        </table>
+                        <br> <input type="submit" class="btn" value="Submit">
+                    </form>
+
+                    <br> <input type="button"
+                        class="btn btn-cancel"
+                        onclick="location.href=location.href.split('?')[0];"
+                        value="Cancel">
+                </span>
+
+                <span id="confirmation" style="display:none">
+                    <h2> Order Confirmation </h2>
+                    <div id="c_order"> <b> Order Id: </b> </div>
+                    <div id="c_product"> <b> Product Name: </b> </div>
+                    <div id="c_price"> <b> Base Price: </b> </div>
+                    <div id="c_name"> <b> Name: </b> </div>
+                    <div id="c_address"> <b> Address: </b> </div>
+                    <div id="c_discount"> <b> Discount Id: </b> </div>
+                    <br> <input type="button"
+                                class="btn"
+                                onclick="location.href=location.href.split('?')[0];"
+                                value="Return Home">
+                </span>
+            </div>
+        </div>
+    </body>
+</html>
