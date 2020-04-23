@@ -85,12 +85,28 @@ public class Storefront extends RESTServlet {
         }
     }
 
-    public void generateDiscountCode(HttpServletRequest req, HttpServletResponse response) {
+    public void doGenerateDiscountCode(HttpServletRequest req, HttpServletResponse response) {
+        Data.Discounts dataDiscount = null;
 
+        JsonObjectBuilder result = Json.createObjectBuilder();
+        try{
+            dataDiscount = myDataSt.createDiscount();
+        } catch(SQLException e) {
+            trySendError(response, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
+            return;
+        }
+        result.add("discount", dataDiscount.toJson());
+        JsonWriter writer = setupJson(response);
+        try{
+            writer.writeObject(result.build());
+        } finally {
+            writer.close();
+        }
     }
 
     public Storefront() {
         registerMethod("submitOrder", this::doSubmitOrder);
+        registerMethod("generateDiscount", this::doGenerateDiscountCode);
     }
 
 }
